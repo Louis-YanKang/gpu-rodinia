@@ -14,6 +14,7 @@ all: euler3d_cpu euler3d_cpu_double pre_euler3d_cpu pre_euler3d_cpu_double
 
 euler3d_cpu: euler3d_cpu.cpp
 	g++ -DZFILL_CACHE_LINES -g -Ofast -march=armv8.2-a -mcpu=a64fx -Dblock_length=$(OMP_NUM_THREADS) -fopenmp euler3d_cpu.cpp -o euler3d_cpu
+	#-DZFILL_CACHE_LINES
 	#-DLIKWID_MARKER_ENABLE -DLIKWID_PERFMON -I/lustre/software/likwid/5.1.1/include -L/lustre/software/likwid/5.1.1/lib -llikwid euler3d_cpu.cpp -o euler3d_cpu  	
 	#armclang++ -g -Ofast -march=armv8.2-a -mcpu=a64fx -Dblock_length=$(OMP_NUM_THREADS) -fopenmp euler3d_cpu.cpp -o euler3d_cpu  
 	#-lprofiler

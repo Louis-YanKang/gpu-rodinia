@@ -240,10 +240,10 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 #pragma omp simd
 	for(int i = b_start; i < b_end; i+=ELEM_PER_CACHE_LINE)
 	{
-          float * __restrict const fluxesi = fluxes + i;
+          float * __restrict const fluxes = fluxes + i;
         
-          if (fluxesi + ZFILL_OFFSET < zfill_limit){
-					    zfill(fluxesi+ZFILL_OFFSET);  
+          if (fluxes + ZFILL_OFFSET < zfill_limit){
+					    zfill(fluxes+ZFILL_OFFSET);  
           }
 
 
@@ -371,15 +371,22 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
     }
 **/
     for (int k=0; k<ELEM_PER_CACHE_LINE; ++k) {
-		    fluxesi[k + VAR_DENSITY*nelr] = flux_i_density;
-		    fluxesi[k + (VAR_MOMENTUM+0)*nelr] = flux_i_momentum.x;
-		    fluxesi[k + (VAR_MOMENTUM+1)*nelr] = flux_i_momentum.y;
-		    fluxesi[k + (VAR_MOMENTUM+2)*nelr] = flux_i_momentum.z;
-		    fluxesi[k + VAR_DENSITY_ENERGY*nelr] = flux_i_density_energy;
-    }            
+		    fluxes[k + VAR_DENSITY*nelr] = flux_i_density;
+		    fluxes[k + (VAR_MOMENTUM+0)*nelr] = flux_i_momentum.x;
+		    fluxes[k + (VAR_MOMENTUM+1)*nelr] = flux_i_momentum.y;
+		    fluxes[k + (VAR_MOMENTUM+2)*nelr] = flux_i_momentum.z;
+		    fluxes[k + VAR_DENSITY_ENERGY*nelr] = flux_i_density_energy;
+    } 
+    
 	}
         }
+ //  Sanity Check
+    
+    for (int j = 0; j<2; j++){
+      printf("%f",fluxes[j]);
+    }
  
+  
 }
 
 #else
