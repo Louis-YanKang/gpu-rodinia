@@ -240,7 +240,7 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 #pragma omp simd
 	for(int i = b_start; i < b_end; i+=ELEM_PER_CACHE_LINE)
 	{
-          float * fluxesi = fluxes + i;
+          float * __restrict const fluxesi = fluxes + i;
         
           if (fluxesi + ZFILL_OFFSET < zfill_limit){
 					    zfill(fluxesi+ZFILL_OFFSET);  
