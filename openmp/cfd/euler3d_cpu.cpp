@@ -47,7 +47,7 @@ struct float3 { float x, y, z; };
  *
  */
 #define GAMMA 1.4
-#define iterations 2000
+#define iterations 3000
 
 #define NDIM 3
 #define NNB 4
@@ -240,10 +240,10 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 #pragma omp simd
 	for(int i = b_start; i < b_end; i+=ELEM_PER_CACHE_LINE)
 	{
-          float * __restrict const fluxes = fluxes + i;
+          float * __restrict const fluxesi = fluxes + i;
         
-          if (fluxes + ZFILL_OFFSET < zfill_limit){
-					    zfill(fluxes+ZFILL_OFFSET);  
+          if (fluxesi + ZFILL_OFFSET < zfill_limit){
+					    zfill(fluxesi+ZFILL_OFFSET);  
           }
 
 
@@ -371,20 +371,23 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
     }
 **/
     for (int k=0; k<ELEM_PER_CACHE_LINE; ++k) {
-		    fluxes[k + VAR_DENSITY*nelr] = flux_i_density;
-		    fluxes[k + (VAR_MOMENTUM+0)*nelr] = flux_i_momentum.x;
-		    fluxes[k + (VAR_MOMENTUM+1)*nelr] = flux_i_momentum.y;
-		    fluxes[k + (VAR_MOMENTUM+2)*nelr] = flux_i_momentum.z;
-		    fluxes[k + VAR_DENSITY_ENERGY*nelr] = flux_i_density_energy;
+		    fluxesi[k + VAR_DENSITY*nelr] = flux_i_density;
+		    fluxesi[k + (VAR_MOMENTUM+0)*nelr] = flux_i_momentum.x;
+		    fluxesi[k + (VAR_MOMENTUM+1)*nelr] = flux_i_momentum.y;
+		    fluxesi[k + (VAR_MOMENTUM+2)*nelr] = flux_i_momentum.z;
+		    fluxesi[k + VAR_DENSITY_ENERGY*nelr] = flux_i_density_energy;
     } 
-    
-	}
-        }
- //  Sanity Check
-    
+
+/**    
+    //  Sanity Check    
     for (int j = 0; j<2; j++){
-      printf("%f",fluxes[j]);
+      printf("%f",fluxesi[j]);
     }
+**/ 
+
+	}
+
+         }
  
   
 }
@@ -528,7 +531,17 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
                 
 	}
         }
+/**
+ //  Sanity Check
+    
+    for (int j = 0; j<2; j++){
+      printf("%f",fluxes[j]);
+    }
+**/
+
 }
+
+
 #endif
 
 void time_step(int j, int nelr, float* old_variables, float* variables, float* step_factors, float* fluxes)
