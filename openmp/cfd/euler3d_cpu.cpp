@@ -233,23 +233,21 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
         {
             int b_start = blk*block_length;
             int b_end = (blk+1)*block_length > nelr ? nelr : (blk+1)*block_length;
+            
             int const tid = omp_get_thread_num();
             int const nthreads = omp_get_num_threads();
-
             float * const zfill_limit = fluxes + (tid+1)*blk - ZFILL_OFFSET;
 #pragma omp simd
 	for(int i = b_start; i < b_end; i+=ELEM_PER_CACHE_LINE)
 	{
-      
-
-    float * restrict const fluxesi = fluxes + i;
-
-    if (fluxesi + ZFILL_OFFSET < zfill_limit){
-					zfill(fluxesi+ZFILL_OFFSET);  
-    }
+          float * restrict const fluxesi = fluxes + i;
+        
+          if (fluxesi + ZFILL_OFFSET < zfill_limit){
+					    zfill(fluxesi+ZFILL_OFFSET);  
+          }
 
 
-    float density_i = variables[i + VAR_DENSITY*nelr];
+          float density_i = variables[i + VAR_DENSITY*nelr];
 		float3 momentum_i;
 		momentum_i.x = variables[i + (VAR_MOMENTUM+0)*nelr];
 		momentum_i.y = variables[i + (VAR_MOMENTUM+1)*nelr];
