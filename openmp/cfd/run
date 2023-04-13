@@ -1,1 +1,2 @@
-./euler3d_cpu ../../data/cfd/fvcorr.domn.193K
+#./euler3d_cpu ../../data/cfd/missile.domn.0.2M
+./euler3d_cpu fvcorr.domn.097K
