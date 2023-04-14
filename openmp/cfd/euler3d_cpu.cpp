@@ -20,7 +20,8 @@
 static const int ZFILL_DISTANCE = 100;
 
 /* 256-byte cache lines */
-static const int ELEM_PER_CACHE_LINE = 256 / sizeof(float);
+static const int ELEM_PER_CACHE_LINE = 24;
+//256 / sizeof(float);
 
 /* Offset from a[j] to zfill */
 static const int ZFILL_OFFSET = ZFILL_DISTANCE * ELEM_PER_CACHE_LINE;
@@ -47,7 +48,7 @@ struct float3 { float x, y, z; };
  *
  */
 #define GAMMA 1.4
-#define iterations 3000
+#define iterations 2000
 
 #define NDIM 3
 #define NNB 4
@@ -226,7 +227,9 @@ void compute_step_factor(int nelr, float* __restrict variables, float* areas, fl
 
 void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, float* variables, float* fluxes, float* ff_variable, float3 ff_flux_contribution_momentum_x, float3 ff_flux_contribution_momentum_y, float3 ff_flux_contribution_momentum_z, float3 ff_flux_contribution_density_energy)
 {
+  
 	const float smoothing_coefficient = float(0.2f);
+  int ctr;
 
   #pragma omp parallel for default(shared) schedule(auto)
         for(int blk = 0; blk < nelr/block_length; ++blk)
@@ -237,13 +240,13 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
             int const tid = omp_get_thread_num();
             int const nthreads = omp_get_num_threads();
             float * const zfill_limit = fluxes + (tid+1)*blk - ZFILL_OFFSET;
-#pragma omp simd
+//#pragma omp simd
 	for(int i = b_start; i < b_end; i+=ELEM_PER_CACHE_LINE)
 	{
           float * __restrict const fluxesi = fluxes + i;
         
           if (fluxesi + ZFILL_OFFSET < zfill_limit){
-					    zfill(fluxesi+ZFILL_OFFSET);  
+					      zfill(fluxesi+ZFILL_OFFSET);  
           }
 
 
@@ -277,7 +280,7 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 		float3 flux_contribution_nb_momentum_x, flux_contribution_nb_momentum_y, flux_contribution_nb_momentum_z;
 		float3 flux_contribution_nb_density_energy;
 		float speed_sqd_nb, speed_of_sound_nb, pressure_nb;
-#pragma unroll
+//#pragma unroll
 		for(int j = 0; j < NNB; j++)
 		{
                         float3 normal; float normal_len;
@@ -363,33 +366,19 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 
 			}
                 }
-/**   
-    float * restrict const fluxesi = fluxes + i;
 
-    if (fluxesi + ZFILL_OFFSET < zfill_limit){
-					zfill(fluxesi+ZFILL_OFFSET);  
-    }
-**/
     for (int k=0; k<ELEM_PER_CACHE_LINE; ++k) {
 		    fluxesi[k + VAR_DENSITY*nelr] = flux_i_density;
 		    fluxesi[k + (VAR_MOMENTUM+0)*nelr] = flux_i_momentum.x;
 		    fluxesi[k + (VAR_MOMENTUM+1)*nelr] = flux_i_momentum.y;
 		    fluxesi[k + (VAR_MOMENTUM+2)*nelr] = flux_i_momentum.z;
 		    fluxesi[k + VAR_DENSITY_ENERGY*nelr] = flux_i_density_energy;
+        ctr++;
     } 
-
-/**    
-    //  Sanity Check    
-    for (int j = 0; j<2; j++){
-      printf("%f",fluxesi[j]);
-    }
-**/ 
-
 	}
-
          }
  
-  
+   //printf("%d\n", ctr);
 }
 
 #else
@@ -397,14 +386,15 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 
 void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, float* variables, float* fluxes, float* ff_variable, float3 ff_flux_contribution_momentum_x, float3 ff_flux_contribution_momentum_y, float3 ff_flux_contribution_momentum_z, float3 ff_flux_contribution_density_energy)
 {
+  int ctr;
 	const float smoothing_coefficient = float(0.2f);
-
+  
 	#pragma omp parallel for default(shared) schedule(auto)
         for(int blk = 0; blk < nelr/block_length; ++blk)
         {
             int b_start = blk*block_length;
             int b_end = (blk+1)*block_length > nelr ? nelr : (blk+1)*block_length;
-#pragma omp simd
+//#pragma omp simd
 	for(int i = b_start; i < b_end; ++i)
 	{
                 float density_i = variables[i + VAR_DENSITY*nelr];
@@ -437,7 +427,7 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 		float3 flux_contribution_nb_momentum_x, flux_contribution_nb_momentum_y, flux_contribution_nb_momentum_z;
 		float3 flux_contribution_nb_density_energy;
 		float speed_sqd_nb, speed_of_sound_nb, pressure_nb;
-#pragma unroll
+//#pragma unroll
 		for(int j = 0; j < NNB; j++)
 		{
                         float3 normal; float normal_len;
@@ -528,16 +518,11 @@ void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, 
 		fluxes[i + (VAR_MOMENTUM+1)*nelr] = flux_i_momentum.y;
 		fluxes[i + (VAR_MOMENTUM+2)*nelr] = flux_i_momentum.z;
 		fluxes[i + VAR_DENSITY_ENERGY*nelr] = flux_i_density_energy;
-                
+    ctr++;        
 	}
         }
-/**
- //  Sanity Check
-    
-    for (int j = 0; j<2; j++){
-      printf("%f",fluxes[j]);
-    }
-**/
+
+    //printf("%d\n", ctr);
 
 }
 
@@ -622,6 +607,7 @@ int main(int argc, char** argv)
 		std::ifstream file(data_file_name);
 
 		file >> nel;
+    printf("%d\n", nel);
 		nelr = block_length*((nel / block_length )+ std::min(1, nel % block_length));
 
 		areas = new float[nelr];
@@ -695,7 +681,6 @@ int main(int argc, char** argv)
 	double end = omp_get_wtime();
 	std::cout  << "Compute time: " << (end-start) << std::endl;
 #endif
-
 
 	std::cout << "Saving solution..." << std::endl;
 	dump(variables, nel, nelr);
